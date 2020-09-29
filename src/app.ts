@@ -2,6 +2,9 @@ class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   element: HTMLFormElement;
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  peopleInputElement: HTMLInputElement;
 
   constructor() {
     // The '!' tells TS we will get an element with that type of id and will not be null.
@@ -15,12 +18,31 @@ class ProjectInput {
 
     this.element = importedNode.firstElementChild as HTMLFormElement;
     this.element.id = 'user-input';
+
+    this.titleInputElement = this.element.querySelector("#title") as HTMLInputElement;
+    this.descriptionInputElement = this.element.querySelector("#description") as HTMLInputElement;
+    this.peopleInputElement = this.element.querySelector("#people") as HTMLInputElement;
+
+    this.configure();
     this.attach();
   }
 
   // The 'private' modifier only limits the 'attach' method to the 'ProjectInput' class.
   private attach() {
     this.hostElement.insertAdjacentElement('afterbegin', this.element);
+  }
+
+  private submitHandler(event: Event) {
+    // validate and do something with the inputs.
+    // preventDefault() prevents a HTTP request from being sent.
+    event.preventDefault();
+
+    console.log(this.titleInputElement.value);
+  }
+
+  private configure() {
+    // bind keeps the content of the class ('this') within the 'configure' method.
+    this.element.addEventListener('submit', this.submitHandler.bind(this));
   }
 }
 
