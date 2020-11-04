@@ -1,6 +1,9 @@
 // autobind decorator.
 // A decorator is a function.
+// The first argument refers to the class.
+// The second argument is the name of the method.
 function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+  // descriptor value is the function or method on which you put the decorator on.
   const originalMethod = descriptor.value;
   const adjDescriptor: PropertyDescriptor = {
     configurable: true,
