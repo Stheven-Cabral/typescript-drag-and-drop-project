@@ -1,3 +1,18 @@
+// autobind decorator.
+// A decorator is a function.
+function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+  const adjDescriptor: PropertyDescriptor = {
+    configurable: true,
+    get() {
+      const boundFn = originalMethod.bind(this);
+      return boundFn;
+    }
+  }
+  return adjDescriptor;
+}
+
+// ProjectInput Class
 class ProjectInput {
   // The element types you see on the right of the colon are dom element types. In order to use this you have to add "dom" to "lib" of the tsconfig.json file.
   templateElement: HTMLTemplateElement;
@@ -34,6 +49,7 @@ class ProjectInput {
     this.hostElement.insertAdjacentElement('afterbegin', this.element);
   }
 
+  @autobind
   private submitHandler(event: Event) {
     // validate and do something with the inputs.
     // preventDefault() prevents a HTTP request from being sent.
@@ -44,7 +60,7 @@ class ProjectInput {
 
   private configure() {
     // bind keeps the content of the class ('this') within the 'configure' method.
-    this.element.addEventListener('submit', this.submitHandler.bind(this));
+    this.element.addEventListener('submit', this.submitHandler);
   }
 }
 
