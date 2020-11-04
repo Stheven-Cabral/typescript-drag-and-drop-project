@@ -13,7 +13,8 @@ class ProjectInput {
     this.templateElement = document.getElementById('project-input')!as HTMLTemplateElement;
     this.hostElement = document.getElementById('app')! as HTMLDivElement;
 
-    // importedNode is only exclusive to the constructor.
+    // importedNode is only exclusive to the constructor. 
+    // document.importNode() creates a copy of the node to be inserted into another document later.
     const importedNode = document.importNode(this.templateElement.content, true);
     // 'content' is a property that sits on the HTMLTemplateElement type. References the content of an element.
 
