@@ -1,3 +1,28 @@
+// Project State Management
+// This is made into a Singleton with a 'private constructor' so that 'ProjectState' only has one instance since it holds state.
+class ProjectState {
+  private projects: any = [];
+  private instance: ProjectState;
+  
+  private constructot() {}
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random.toString(),
+      title: title,
+      description: description,
+      people: numOfPeople
+    };
+    this.projects.push(newProject);
+  }
+
+
+}
+
+// Global instance of 'ProjectState'.
+const projectState = ProjectState.getInstance();
+
+
 // Validation Logic
 interface Validatable {
   // The question mark after the key indicates that undefined is acceptable or that key is optional.
@@ -51,6 +76,32 @@ function autobind(target: any, methodName: string, descriptor: PropertyDescripto
 
 
 // ProjectList class - Attaches list of projects to the page.
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLElement;
+
+  constructor(private type: 'active' | 'finished') { 
+    this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+    this.hostElement = document.getElementById('app')! as HTMLDivElement;
+    const importedNode = document.importNode(this.templateElement.content, true);
+    this.element = importedNode.firstElementChild as HTMLElement;
+
+    this.element.id = `${this.type}-projects`;
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector('ul')!.id = listId;
+    this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + 'PROJECTS'; 
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('beforeend', this.element);
+  }
+}
 
 
 // ProjectInput class - This class when instantiated will render a form.
@@ -155,4 +206,5 @@ class ProjectInput {
 }
 
 const prjInput = new ProjectInput();
-
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
