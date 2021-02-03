@@ -1,22 +1,63 @@
+// Project Type
+enum ProjectStatus { Active, Finished };
+
+class Project {
+  constructor(
+    public id: string,
+    public title: string,
+    public description: string,
+    public people: number,
+    public status: ProjectStatus) {
+
+  }
+}
+
 // Project State Management
 // This is made into a Singleton with a 'private constructor' so that 'ProjectState' only has one instance since it holds state.
-class ProjectState {
-  private projects: any = [];
-  private instance: ProjectState;
-  
-  private constructot() {}
+type Listener<T> = (item: T[]) => void;
 
-  addProject(title: string, description: string, numOfPeople: number) {
-    const newProject = {
-      id: Math.random.toString(),
-      title: title,
-      description: description,
-      people: numOfPeople
-    };
-    this.projects.push(newProject);
+
+class State<T> {
+  // Adding protexted in front of this property means it can be accessed only within the base class and if it is inherited.
+  protected listeners: Listener<T>[] = [];
+
+  addListener(listenerFn: Listener<T>) {
+    this.listeners.push(listenerFn);
+  }
+}
+
+
+
+class ProjectState extends State<Project> {
+  private projects: Project[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {
+    super();
   }
 
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState;
+    return this.instance;
+  }
 
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = new Project(
+      Math.random.toString(),
+      title,
+      description,
+      numOfPeople,
+      ProjectStatus.Active
+    );
+    this.projects.push(newProject);
+    for (const listenerFn of this.listeners) {
+      // slice returns a copy of the array, not the original array.
+      listenerFn(this.projects.slice());
+    }
+  }
 }
 
 // Global instance of 'ProjectState'.
@@ -75,54 +116,91 @@ function autobind(target: any, methodName: string, descriptor: PropertyDescripto
 }
 
 
-// ProjectList class - Attaches list of projects to the page.
-class ProjectList {
+// Component Base Class
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLElement;
+  hostElement: T;
+  element: U;
 
-  constructor(private type: 'active' | 'finished') { 
-    this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
-    this.hostElement = document.getElementById('app')! as HTMLDivElement;
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    insertAtStart: boolean,
+    newElementId?: string
+  ) {
+    this.templateElement = document.getElementById(templateId)! as HTMLTemplateElement;
+    this.hostElement = document.getElementById(hostElementId)! as T;
     const importedNode = document.importNode(this.templateElement.content, true);
-    this.element = importedNode.firstElementChild as HTMLElement;
+    this.element = importedNode.firstElementChild as U;
+    if (newElementId) {
+      this.element.id = `${newElementId}`;
+    }
 
-    this.element.id = `${this.type}-projects`;
-    this.attach();
+    this.attach(insertAtStart);
+  };
+
+  private attach(insertAtBeginning: boolean) {
+    this.hostElement.insertAdjacentElement(insertAtBeginning ? 'afterbegin' : 'beforeend', this.element);
+  }
+
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
+
+// ProjectList class - Attaches list of projects to the page.
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assignedProjects: Project[];
+
+  constructor(private type: 'active' | 'finished') {
+    super('project-list', 'app', false, `${type}-projects`);
+    this.assignedProjects = [];
+
+    this.configure();
     this.renderContent();
   }
 
-  private renderContent() {
-    const listId = `${this.type}-projects-list`;
-    this.element.querySelector('ul')!.id = listId;
-    this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + 'PROJECTS'; 
+  configure() {
+    projectState.addListener((projects: Project[]) => {
+      const relevantProjects = projects.filter(prj => {
+        if (this.type === 'active') {
+          return prj.status === ProjectStatus.Active;
+        }
+        return prj.status === ProjectStatus.Finished;
+      });
+      this.assignedProjects = relevantProjects;
+      this.renderProjects();
+    })
   }
 
-  private attach() {
-    this.hostElement.insertAdjacentElement('beforeend', this.element);
+  renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector('ul')!.id = listId;
+    this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + 'PROJECTS';
+  }
+
+  private renderProjects() {
+    const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+    listEl.innerHTML = '';
+    for (const prjItem of this.assignedProjects) {
+      const listItem = document.createElement('li');
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
   }
 }
 
 
 // ProjectInput class - This class when instantiated will render a form.
-class ProjectInput {
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLFormElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   peopleInputElement: HTMLInputElement;
 
   constructor() {
-    // Below we have to type cast 'HTMLTemplateElement' because the 'getElementById' method onlt returns 'HTMLElement', not 'HTMLInputElement'. 
-    this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement;
-    this.hostElement = document.getElementById('app')! as HTMLDivElement;
+    super('project-input', 'app', true, 'user-input');
 
-    // 'content' returns what is inside the 'template' node. This is a copy and the 'original node' is untouched.
-    const importedNode = document.importNode(this.templateElement.content, true);
-    this.element = importedNode.firstElementChild as HTMLFormElement;
-    // Add styling to the form.
-    this.element.id = 'user-input';
+    // Needed for bind, but replaced with binding below in the addEventListener callback. 
+    // this.submitHandler = this.submitHandler.bind(this);
 
     // Get access to the various inputs.
     // Notice that you are calling querySelector from this.element because this is the clone you created.
@@ -130,20 +208,17 @@ class ProjectInput {
     this.descriptionInputElement = this.element.querySelector('#description')! as HTMLInputElement;
     this.peopleInputElement = this.element.querySelector('#people')! as HTMLInputElement;
 
-    // Needed for bind, but replaced with binding below in the addEventListener callback. 
-    // this.submitHandler = this.submitHandler.bind(this);
-
 
     this.configure();
     // Calling a method in a constructor automatically executes that function.
-    this.attach();
   }
 
-  // private means this method can only be called from inside the class.
-  private attach() {
-    this.hostElement.insertAdjacentElement('afterbegin', this.element);
+  configure() {
+    // You leave out parenthisis because you don't want the callback to execute and return something right away.
+    this.element.addEventListener('submit', this.submitHandler);
   }
 
+  renderContent() { }
 
   // The following private method grabs input values and validates them using the 'validate' method.
   private gatherUserInput(): [string, string, number] | void {
@@ -194,14 +269,9 @@ class ProjectInput {
     if (Array.isArray(userInput)) {
       // Notice that you destructure the array can change the constant name that references each item in the array.
       const [title, desc, people] = userInput;
-      console.log(title, desc, people);
+      projectState.addProject(title, desc, people);
       this.clearInputs();
     }
-  }
-
-  private configure() {
-    // You leave out parenthisis because you don't want the callback to execute and return something right away.
-    this.element.addEventListener('submit', this.submitHandler);
   }
 }
 
