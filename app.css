@@ -7,7 +7,11 @@ html {
 }
 
 body {
-  margin: 0;
+  margin: 48px auto 0;
+}
+
+h1 {
+  text-align: center;
 }
 
 label,
@@ -125,4 +129,34 @@ button:active {
   padding: 1rem;
   border: 1px solid #143d59;
   background: #f7f7f7;
+}
+
+@media (min-width: 576px) {
+  body {
+    width: 540px;
+  }
+}
+
+@media (min-width: 768px) {
+  body {
+    width: 720px;
+  }
+}
+
+@media (min-width: 992px) {
+  body {
+    width: 960px;
+  }
+}
+
+@media (min-width: 1200px) {
+  body {
+    width: 1140px;
+  }
+}
+
+@media (min-width: 1400px) {
+  body {
+    width: 1320px;
+  }
 }
