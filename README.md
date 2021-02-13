@@ -1,2 +1,3 @@
 # typescript-drag-and-drop-project
-Project for building a drag and drop feature with TypeScript. (Incomplete)
+
+A drag and adrop project management tool built with TypeScript.
